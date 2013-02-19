@@ -17,11 +17,6 @@ class SafeWriter(object):
     def __init__(self, filename):
         self.filename_ = filename
 
-        try:
-            os.makedirs(os.path.dirname(filename))
-        except OSError:
-            pass
-
     def write(self, data):
         # Open the file and obtain exclusive lock on it.
         # May block.

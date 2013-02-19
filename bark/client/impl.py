@@ -7,7 +7,16 @@ import os
 from .lib import SafeWriter, pack_swipe
 
 class BarkClient(object):
-    persistent_store_file_ = os.path.expanduser('~/.bark-client/dev/swipes')
+    def __init__(self):
+        self.conf_dir_ = os.path.expanduser('~/.bark-client/dev')
+
+        self.persistent_store_file_ = self.conf_dir_ + '/swipes'
+
+        # Ensure we create configuration directories.
+        try:
+            os.makedirs(self.conf_dir_)
+        except OSError:
+            pass
 
     def save_persistent_(self, data):
         data = str(data)
