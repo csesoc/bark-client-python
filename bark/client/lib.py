@@ -10,6 +10,44 @@ from datetime import datetime
 def pack_swipe(event_description=None, swipe_data=None):
     return struct.pack('< 64s 64s', event_description, swipe_data)
 
+class LockedFile(object):
+    """
+    Provides an interface for gaining exclusive lock on a file. May block.
+
+    Use like so:
+
+        with LockedFile(filename, flags, mode) as fd:
+            ... # operate on `fd'
+
+    Params flags and mode are optional.
+    """
+
+    def __init__(
+            self,
+            filename,
+            flags=os.O_APPEND | os.O_CREAT | os.O_WRONLY,
+            mode=0600):
+        self.filename_ = filename
+        self.flags_ = flags
+        self.mode_ = mode
+
+    def __enter__(self):
+        # Open...
+        self.fd_ = os.open(
+            self.filename_,
+            self.flags_,
+            self.mode_)
+
+        # ...and lock.
+        fcntl.flock(self.fd_, fcntl.LOCK_EX)
+
+        return self.fd_
+
+    def __exit__(self, *args, **kwargs):
+        # Unlock and close.
+        fcntl.flock(self.fd_, fcntl.LOCK_UN)
+        os.close(self.fd_)
+
 class SafeWriter(object):
     """
     Atomic file writer. Should never corrupt data.
@@ -20,27 +58,18 @@ class SafeWriter(object):
         self.filename_ = filename
 
     def write(self, data):
-        # Open the file and obtain exclusive lock on it.
-        # May block.
-        fd = os.open(
-            self.filename_,
-            os.O_APPEND | os.O_CREAT | os.O_WRONLY,
-            0600)
-        fcntl.flock(fd, fcntl.LOCK_EX)
-        old_size = os.fstat(fd).st_size
+        with LockedFile(self.filename_) as fd:
+            old_size = os.fstat(fd).st_size
 
-        try:
-            nbytes = os.write(fd, data)
+            try:
+                nbytes = os.write(fd, data)
 
-            # Just in case.
-            assert nbytes == len(data), 'write() did not write all bytes'
-        except Exception, e:
-            print 'Could not write out data, corruption imminent. '\
-                'Old filesize=%r' % old_size
-            raise e
-        finally:
-            fcntl.flock(fd, fcntl.LOCK_UN)
-            os.close(fd)
+                # Just in case.
+                assert nbytes == len(data), 'write() did not write all bytes'
+            except Exception, e:
+                print 'Could not write out data, corruption imminent. '\
+                    'Old filesize=%r' % old_size
+                raise e
 
 class BarkApiException(Exception):
     pass
