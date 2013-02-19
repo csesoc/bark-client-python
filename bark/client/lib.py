@@ -7,8 +7,30 @@ import struct
 import json, requests
 from datetime import datetime
 
+SWIPE_FMT_ = '< 64s 64s'
+
 def pack_swipe(event_description=None, swipe_data=None):
-    return struct.pack('< 64s 64s', event_description, swipe_data)
+    return struct.pack(SWIPE_FMT_, event_description, swipe_data)
+
+def unpack_swipes_from_file(fd):
+    """
+    Generator of swipes from a given file descriptor.
+
+    Requires `fd' to be locked or otherwise guaranteed to be untruncated as
+    this generator is iterated.
+    """
+
+    record_size = struct.calcsize(SWIPE_FMT_)
+    total_size = os.fstat(fd).st_size
+
+    for _ in xrange(total_size / record_size):
+        buf = os.read(fd, record_size)
+        unpacked = struct.unpack(SWIPE_FMT_, buf)
+        yield dict(zip(
+            ['event_description', 'swipe_data'],
+            map(
+                lambda s: s.strip('\0'), # Silly unpack() pads string with '\0'.
+                unpacked)))
 
 class LockedFile(object):
     """
