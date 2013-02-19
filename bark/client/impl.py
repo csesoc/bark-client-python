@@ -4,8 +4,9 @@ Implements the core of Bark client.
 
 import getpass, os
 
-from .lib import SafeWriter, pack_swipe
+from .lib import SafeWriter, pack_swipe, unpack_swipes_from_file
 from .lib import BarkApiClient
+from .lib import LockedFile
 
 class BarkClient(object):
     def __init__(self):
@@ -80,4 +81,16 @@ class BarkClient(object):
         self.save_persistent_(packed)
 
     def upload(self):
-        raise Exception('Not implemented')
+        """
+        Uploads stored swipes to Bark servers.
+
+        TODO: tag each swipe with an UUID. These can be filtered out by our
+        servers.
+        """
+
+        self.api.set_auth_token(self.get_auth_token_())
+
+        with LockedFile(self.persistent_store_file_, flags=os.O_RDONLY) as fd:
+            swipes = unpack_swipes_from_file(fd)
+            for swipe in swipes:
+                self.api.send_single_swipe(swipe)
