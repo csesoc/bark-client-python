@@ -22,7 +22,7 @@ def main():
         event_description=event,
         swipe_data=swipe)
 
-    # client.upload()
+    client.upload()
 
 if __name__ == '__main__':
     main()
