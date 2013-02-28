@@ -1,0 +1,8 @@
+<<<<<<< HEAD
+argparse==1.2.1
+distribute==0.6.24
+requests==1.1.0
+wsgiref==0.1.2
+=======
+requests==1.1.0
+>>>>>>> 1f9683f91cab235443bf29079a1cb149fb38388a

@@ -99,6 +99,7 @@ class BarkApiException(Exception):
 class BarkApiClient(object):
     bark_url_ = 'http://localhost:5000'
     auth_token_ = None
+    device_id = None
 
     def post_(self, url, **kwargs):
         r = requests.post(
@@ -107,6 +108,17 @@ class BarkApiClient(object):
             headers={
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
+            })
+        return r.json()
+
+    def auth_post_(self, url, **kwargs): 
+        r = requests.post(
+            self.bark_url_ + url,
+            data=json.dumps(kwargs),
+            headers={
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'auth_token': self.auth_token_,
             })
         return r.json()
 
@@ -122,19 +134,30 @@ class BarkApiClient(object):
 
         return response['auth_token']
 
+    def set_device_id(self, device_id):
+        self.device_id_ = device_id
+
+    def register_device(self, event_id):
+        response = self.auth_post_('/devices', event_id=event_id)
+
+        if response['status'] != 'OK':
+            error = 'Bark API call failed.\n' + json.dumps(response, indent=2)
+            raise BarkApiException(error)
+
+        return response['id']
+
     def send_single_swipe(self, swipe):
         assert isinstance(swipe, dict)
         assert self.auth_token_ is not None, 'Set my auth_token first!'
+        assert self.device_id_ is not None, 'Need to get a device ID for the event'
 
         data = {
-            'auth_token': self.auth_token_,
-            'device': 'bark.client.lib.BarkApiClient test client',
+            'device': self.device_id_,
             'timestamp': str(datetime.now()),
-            'event_description': swipe['event_description'],
             'uid': swipe['swipe_data'],
         }
 
-        response = self.post_('/swipe/', **data)
+        response = self.auth_post_('/swipe', **data)
         if response['status'] != 'OK':
             error = 'Bark API call failed.\n' + json.dumps(response, indent=2)
             raise BarkApiException(error)
