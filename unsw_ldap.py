@@ -1,11 +1,8 @@
 import ldap
 
 class LdapLookup():
-    
-    user_zid = None
-    user_zpass = None
 
-    def set_auth_id(self, zid, zpass):
+    def __init__(self, zid, zpass):
         self.user_zid = zid
         self.user_zpass = zpass
 

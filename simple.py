@@ -7,8 +7,6 @@ import datetime
 from reader import USBSerialReader
 from unsw_ldap import LdapLookup
 
-ldap = LdapLookup()
-
 def handle_swipe(reader, auth_token, device_id, event_id):
     swipe = reader.read()
     timestamp = datetime.datetime.now().isoformat()
@@ -22,10 +20,10 @@ def handle_swipe(reader, auth_token, device_id, event_id):
     print user['school']
     print user['faculty']
 
-    enrol = raw_input("Add cardholder to society and upload swipe? [Y/N]")
-    if enrol == 'Y':
-        api.create_identity(auth_token, zid)
+    enrol = raw_input("Add cardholder to society and upload swipe? [y/n]")
+    if enrol == 'y':
         api.post_swipe(auth_token, device_id, event_id, timestamp, swipe)    
+        api.create_identity(auth_token, swipe, zid)
 
 print "Bark API Login"
 username = raw_input("Username: ")
@@ -34,6 +32,7 @@ password = getpass.getpass()
 print "UNSW LDAP Login (Zid + Zpass). Don't get this wrong..."
 zid = raw_input("Zid: ")
 zpass = getpass.getpass()
+ldap = LdapLookup(zid, zpass)
 
 print "Connecting to serial reader"
 reader = USBSerialReader()

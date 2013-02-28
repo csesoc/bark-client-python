@@ -1,7 +1,7 @@
 import json
 import requests
 
-API_URL = 'http://127.0.0.1:5000'
+API_URL = 'https://api.bark.csesoc.unsw.edu.au'
 
 def bark_request(method, endpoint, **kwargs):
     """
@@ -13,7 +13,7 @@ def bark_request(method, endpoint, **kwargs):
             kwargs['headers'] = {}
         kwargs['headers']['auth_token'] = kwargs['auth_token']
         del kwargs['auth_token']
-    return getattr(requests, method)(url, **kwargs)
+    return getattr(requests, method)(url, verify=False, **kwargs)
 
 def json_request(method, endpoint, json_dict=None, **kwargs):
     if json_dict is not None:
@@ -48,4 +48,9 @@ def post_swipe(auth_token, device_id, event_id, timestamp, card_uid):
     response = json_request('post', '/swipes',
                    json_dict,
                    auth_token=auth_token)
+    return response
+
+def create_identity(auth_token, swipe, zid):
+    response = json_request('post', '/persons', dict(card_uid=swipe, student_number=zid), auth_token=auth_token)
+    print response
     return response
