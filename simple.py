@@ -4,12 +4,13 @@ import bark_api as api
 import sys
 import datetime
 
+from reader import USBSerialReader
 from unsw_ldap import LdapLookup
 
 ldap = LdapLookup()
 
-def handle_swipe(auth_token, device_id, event_id):
-    swipe = sys.stdin.readline()
+def handle_swipe(reader, auth_token, device_id, event_id):
+    swipe = reader.read()
     timestamp = datetime.datetime.now().isoformat()
     print swipe
 
@@ -34,6 +35,8 @@ print "UNSW LDAP Login (Zid + Zpass). Don't get this wrong..."
 zid = raw_input("Zid: ")
 zpass = getpass.getpass()
 
+print "Connecting to serial reader"
+reader = USBSerialReader()
 
 auth_token = api.get_auth_token(username, password)
 
@@ -56,4 +59,4 @@ while(True):
         break;
 
     elif act == 's':
-        handle_swipe(auth_token, device_id, event_id)
+        handle_swipe(reader, auth_token, device_id, event_id)
