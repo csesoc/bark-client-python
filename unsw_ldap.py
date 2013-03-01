@@ -1,4 +1,5 @@
 import ldap
+from ldap import LDAPError
 
 class LdapLookup():
 
@@ -36,5 +37,4 @@ class LdapLookup():
             return details
 
         except ldap.LDAPError, e:
-            print e
-            return None
+            raise LDAPError

@@ -34,12 +34,13 @@ class USBSerialReader:
     conn = None
     last_uid = ''
 
-    def __init__(self):
+    def __init__(self, verbose=False, quit_on_no_connection=False):
         try:
-            self.conn = get_connection(verbose=True)
+            self.conn = get_connection(verbose=verbose)
         except serial.SerialException:
-            print >> sys.stderr, "No USB Serial devices found"
-            sys.exit()
+            if verbose:
+                print >> sys.stderr, 'No USB Serial devices found'
+            raise serial.SerialException
 
     def read(self, timeout=None):
         """Read a UID from the serial device, blocking until success or timeout"""
@@ -49,8 +50,12 @@ class USBSerialReader:
             if NULL_READ not in line and LEADING_DATA in line and line != self.last_uid:
                 self.last_uid = line
                 break
-        return self.last_uid[len(LEADING_DATA):]
+        return line[len(LEADING_DATA):]
 
-if __name__ == "__main__":
-    r = USBSerialReader()
-    print r.read()
+if __name__ == '__main__':
+    r = None
+    try:
+        r = USBSerialReader()
+        print r.read()
+    except serial.SerialException:
+        print >> sys.stderr, 'No USB Serial devices found'
