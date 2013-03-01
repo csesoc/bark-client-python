@@ -1,7 +1,7 @@
 import ldap
 from ldap import LDAPError
 
-class LdapLookup():
+class UnswLdapClient():
 
     def __init__(self, zid, zpass):
         self.user_zid = zid
