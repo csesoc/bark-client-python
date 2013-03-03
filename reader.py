@@ -3,6 +3,8 @@ import serial
 import os.path
 import sys
 import time
+import threading
+import datetime
 
 SERIAL_PORT_BASE = '/dev/ttyUSB' 
 MAX_PORT_ATTEMPTS = 8
@@ -34,7 +36,7 @@ class USBSerialReader:
     conn = None
     last_uid = ''
 
-    def __init__(self, verbose=False, quit_on_no_connection=False):
+    def __init__(self, verbose=False):
         try:
             self.conn = get_connection(verbose=verbose)
         except serial.SerialException:
@@ -45,12 +47,35 @@ class USBSerialReader:
     def read(self, timeout=None):
         """Read a UID from the serial device, blocking until success or timeout"""
         start_time = time.time()
-        while (timeout == None or time.time() - start_time < timeout):
+        while timeout == None or time.time() - start_time < timeout:
             line = self.conn.readline().strip()
             if NULL_READ not in line and LEADING_DATA in line and line != self.last_uid:
                 self.last_uid = line
                 break
         return line[len(LEADING_DATA):]
+
+class ThreadedUSBSerialReader(threading.Thread):
+    stop_scheduled = threading.Event()
+
+    def __init__(self, queue, verbose=False):
+        threading.Thread.__init__(self)
+        self.reader = USBSerialReader(verbose)
+        self.queue = queue
+        self.verbose = verbose
+
+    def run(self):
+        self.stop_scheduled.clear()
+        if self.verbose:
+            print >> sys.stderr, 'Threaded reader started'
+        while not self.stop_scheduled.is_set():
+            card_uid = self.reader.read(timeout=1)
+            if card_uid:
+                self.queue.put((card_uid, datetime.datetime.now()),)
+        if self.verbose:
+            print >> sys.stderr, 'Thread reader stopped'
+
+    def stop(self):
+        self.stop_scheduled.set()
 
 if __name__ == '__main__':
     r = None

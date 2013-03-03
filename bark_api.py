@@ -31,6 +31,11 @@ def get_auth_token(username, password):
     
     return response['auth_token']
 
+def get_event(auth_token, event_id):
+    url = '/events/' + str(event_id)
+    response = json_request('get', url,  auth_token=auth_token)
+    return response
+
 def get_events(auth_token):
     response = json_request('get', '/events', auth_token=auth_token)
     return response['events']
@@ -52,5 +57,9 @@ def post_swipe(auth_token, device_id, event_id, timestamp, card_uid):
 
 def create_identity(auth_token, swipe, zid):
     response = json_request('post', '/persons', dict(card_uid=swipe, student_number=zid), auth_token=auth_token)
-    print response
     return response
+
+def get_member_card_uids(auth_token, group_id):
+    url = '/groups/' + str(group_id) + '/card_uids'
+    response = json_request('get', url,  auth_token=auth_token)
+    return response['card_uids']
