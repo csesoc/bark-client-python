@@ -1,25 +1,41 @@
 import ldap
 from ldap import LDAPError
+import sys
+
+LDAP_URL = 'ad.unsw.edu.au'
+LDAP_USERNAME_EXT = '@ad.unsw.edu.au'
+TIMEOUT = 5
+
+def get_ldap_connection(zid, zpass):
+    conn = ldap.open(LDAP_URL)
+    conn.protocol_version = ldap.VERSION3
+    conn.set_option(ldap.OPT_NETWORK_TIMEOUT, TIMEOUT)
+    upn = self.user_zid + LDAP_USERNAME_EXT
+    conn.bind_s(upn, self.user_zpass)
+    return conn
 
 class UnswLdapClient():
+    conn = None
 
-    def __init__(self, zid, zpass):
+    def __init__(self, zid, zpass, verbose=False):
         self.user_zid = zid
         self.user_zpass = zpass
 
-    def get_user(self, zid):
         try:
-            l = ldap.open("ad.unsw.edu.au")
-            l.protocol_version = ldap.VERSION3
+            self.conn = get_ldap_connection(zid, zpass)
+        except (LDAPError, ldap.SERVER_DOWN), e:
+            # We'll handle the problem when we come to it
+            if verbose:
+                print >> sys.stdout, 'Problem connecting to LDAP server'
+            pass
 
-            upn = self.user_zid + '@ad.unsw.edu.au'
+    def get_user(self, zid):
+        baseDN = "OU=IDM_People,OU=IDM,DC=ad,DC=unsw,DC=edu,DC=au"
+        searchScope = ldap.SCOPE_SUBTREE
+        retrieveAttributes = ['cn', 'displayNamePrintable', 'givenName', 'sn', 'mail','extensionAttribute10','extensionAttribute11', 'displayName']
+        searchFilter = "cn=" + zid
 
-            l.bind_s(upn, self.user_zpass)
-
-            baseDN = "OU=IDM_People,OU=IDM,DC=ad,DC=unsw,DC=edu,DC=au"
-            searchScope = ldap.SCOPE_SUBTREE
-            retrieveAttributes = ['cn', 'displayNamePrintable', 'givenName', 'sn', 'mail','extensionAttribute10','extensionAttribute11', 'displayName']
-            searchFilter = "cn=" + zid
+        try:
 
             ldap_result = l.search(baseDN, searchScope, searchFilter, retrieveAttributes)
             result_type, result_data = l.result(ldap_result, 0)
@@ -38,3 +54,4 @@ class UnswLdapClient():
 
         except ldap.LDAPError, e:
             raise LDAPError
+
