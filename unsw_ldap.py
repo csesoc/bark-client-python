@@ -26,12 +26,12 @@ def query_user(ldap_conn, zid):
     try:
         user_dn,attr_results = result_data[0]
         details = {}
-        details['givenName'] = attr_results['givenName'][0]
-        details['lastname'] = attr_results['sn'][0]
+        details['given_name'] = attr_results['givenName'][0]
+        details['last_name'] = attr_results['sn'][0]
         details['email'] = attr_results['mail'][0]
         details['faculty'] = attr_results['extensionAttribute10'][0]
         details['school'] = attr_results['extensionAttribute11'][0]
-        details['displayName'] = attr_results['displayName'][0]
+        details['display_name'] = attr_results['displayName'][0]
     except (IndexError, KeyError):
         raise UserNotFoundError
 
