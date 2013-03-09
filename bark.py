@@ -25,7 +25,7 @@ def get_student_info(ldap_client):
         print 'Student not found'
         return None
 
-def get_student_number(ldap_client)
+def get_student_number(ldap_client):
     student_number = get_student_info(ldap_client)
     if not student_number:
         retry = raw_input('Retry fetching data? (Y/n): ')
@@ -33,7 +33,7 @@ def get_student_number(ldap_client)
             student_number = get_student_info(ldap_client)
     return student_number
 
-def handle_unknown_card(ldap_client, bark_client, card_uid)
+def handle_unknown_card(ldap_client, bark_client, card_uid):
     student_number = get_student_number(ldap_client)
     if student_number:
         add = raw_input('Add to Bark group? (Y/n):')
