@@ -14,8 +14,12 @@ class BarkAPIClient:
         bark_api.create_identity(self.auth_token, card_uid, student_number)
 
     def register_swipe(self, card_uid, time):
-        bark_api.post_swipe(self.auth_token, self.device_id, self.event_id, time.isoformat(), card_uid)
-        session_swipes.append({'card_uid':card_uid, 'timestamp':time})
+        try:
+            bark_api.post_swipe(self.auth_token, self.device_id, self.event_id, time.isoformat(), card_uid)
+        except e:
+            pass
+        finally:
+            session_swipes.append({'card_uid':card_uid, 'timestamp':time})
 
     def get_events(self):
         return bark_api.get_events(self.auth_token)
