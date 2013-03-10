@@ -75,6 +75,12 @@ def swipe_loop(card_queue, ldap_client, bark_client):
 
         # Add delayed uploading here
 
+def save_swipes(swipes, event_name):
+    save_file_name = [c for c in event_number if isalpha(c)]
+    save_file_name.append(datetime.datetime.now().isoformat())
+    save_file = open(save_file_name, 'w')
+    pickle.dumps(swipes, save_file)
+
 if __name__ == '__main__':
     print 'Connecting to serial reader...',
     try:
@@ -116,15 +122,11 @@ if __name__ == '__main__':
             reader.stop()
             choice = raw_input('(R)eset reader, (S)ave swipes, Save and (E)xit')
             if choice == 'r' or choice == 'R':
+                with q.mutex:
+                    q.queue.clear()
                 reader.reset()
             elif choice == 's' or choice == 'S':
-                save_file_name = [c for c in event[event_number]['name'] if isalpha(c)]
-                save_file_name.append(datetime.datetime.now().isoformat())
-                save_file = open(save_file_name, 'w')
-                pickle.dumps(bark_client.get_session_swipes(), save_file)
+                save_swipes(bark_client.get_session_swipes(), event[event_number]['name'])
             elif choice == 'e' or choice == 'E':
-                save_file_name = [c for c in event[event_number]['name'] if isalpha(c)]
-                save_file_name.append(datetime.datetime.now().isoformat())
-                save_file = open(save_file_name, 'w')
-                pickle.dumps(bark_client.get_session_swipes(), save_file)
+                save_swipes(bark_client.get_session_swipes(), event[event_number]['name'])
                 finished = True
