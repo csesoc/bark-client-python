@@ -54,8 +54,12 @@ class USBSerialReader:
                 break
         return line[len(LEADING_DATA):]
 
+    def reset(self):
+        self.last_uid = ''
+
 class ThreadedUSBSerialReader(threading.Thread):
     stop_scheduled = threading.Event()
+    reset_needed = threading.Event()
 
     def __init__(self, queue, verbose=False):
         threading.Thread.__init__(self)
@@ -65,9 +69,13 @@ class ThreadedUSBSerialReader(threading.Thread):
 
     def run(self):
         self.stop_scheduled.clear()
+        self.reset_needed.clear()
         if self.verbose:
             print >> sys.stderr, 'Threaded reader started'
         while not self.stop_scheduled.is_set():
+            if self.reset_needed.is_set():
+                self.reader.reset()
+                self.reset_needed.clear()
             card_uid = self.reader.read(timeout=1)
             if card_uid:
                 self.queue.put((card_uid, datetime.datetime.now()),)
