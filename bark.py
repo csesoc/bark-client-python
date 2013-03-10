@@ -2,6 +2,8 @@
 import getpass
 from Queue import Queue
 import sys
+import pickle
+import datetime
 
 from reader import ThreadedUSBSerialReader
 import unsw_ldap
@@ -103,9 +105,26 @@ if __name__ == '__main__':
     bark_client.set_event(event_id)
     print 'Selected: ' + events[event_number]['name']
 
-    try:
-        reader.start()
-        swipe_loop(card_queue, ldap_client, bark_client)
+    finished = False
+    while not finished: 
+        try:
+            reader.start()
+            print 'ctrl-c to stop'
+            swipe_loop(card_queue, ldap_client, bark_client)
 
-    except KeyboardInterrupt:
-        reader.stop()
+        except KeyboardInterrupt:
+            reader.stop()
+            choice = raw_input('(R)eset reader, (S)ave swipes, Save and (E)xit')
+            if choice == 'r' or choice == 'R':
+                reader.reset()
+            elif choice == 's' or choice == 'S':
+                save_file_name = [c for c in event[event_number]['name'] if isalpha(c)]
+                save_file_name.append(datetime.datetime.now().isoformat())
+                save_file = open(save_file_name, 'w')
+                pickle.dumps(bark_client.get_session_swipes(), save_file)
+            elif choice == 'e' or choice == 'E':
+                save_file_name = [c for c in event[event_number]['name'] if isalpha(c)]
+                save_file_name.append(datetime.datetime.now().isoformat())
+                save_file = open(save_file_name, 'w')
+                pickle.dumps(bark_client.get_session_swipes(), save_file)
+                finished = True
