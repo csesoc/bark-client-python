@@ -12,20 +12,24 @@ from bark_api_client import BarkAPIClient
 class BadCardError(Exception):
     pass
 
+offline = False
+
 def get_student_info(ldap_client):
     student_number = raw_input('Student Number: ')
-    try:
-        user = ldap_client.get_user(student_number)
-        print user['display_name']
-        print user['school']
-        print user['faculty']
-        return student_number
-    except unsw_ldap.LDAPError:
-        print 'Error retreiving LDAP Data'
-        return student_number
-    except unsw_ldap.UserNotFoundError:
-        print 'Student not found'
-        return None
+    if not offline:
+        try:
+            user = ldap_client.get_user(student_number)
+            print user['display_name']
+            print user['school']
+            print user['faculty']
+            return student_number
+        except unsw_ldap.LDAPError:
+            print 'Error retreiving LDAP Data'
+            return student_number
+        except unsw_ldap.UserNotFoundError:
+            print 'Student not found'
+            return None
+    return student_number
 
 def get_student_number(ldap_client):
     student_number = get_student_info(ldap_client)
@@ -120,11 +124,14 @@ if __name__ == '__main__':
 
         except KeyboardInterrupt:
             reader.stop()
-            choice = raw_input('(R)eset reader, (S)ave swipes, Save and (E)xit')
+            choice = raw_input('(R)eset reader, go (O)ffline, (S)ave swipes, Save and (E)xit')
             if choice == 'r' or choice == 'R':
                 with q.mutex:
                     q.queue.clear()
                 reader.reset()
+            elif choice == 'O':
+                offline = True
+                bark_client.offline = True
             elif choice == 's' or choice == 'S':
                 save_swipes(bark_client.get_session_swipes(), event[event_number]['name'])
             elif choice == 'e' or choice == 'E':
