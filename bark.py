@@ -4,6 +4,7 @@ from Queue import Queue
 import sys
 import pickle
 import datetime
+import string
 
 from reader import ThreadedUSBSerialReader
 import unsw_ldap
@@ -12,23 +13,20 @@ from bark_api_client import BarkAPIClient
 class BadCardError(Exception):
     pass
 
-offline = False
-
 def get_student_info(ldap_client):
     student_number = raw_input('Student Number: ')
-    if not offline:
-        try:
-            user = ldap_client.get_user(student_number)
-            print user['display_name']
-            print user['school']
-            print user['faculty']
-            return student_number
-        except unsw_ldap.LDAPError:
-            print 'Error retreiving LDAP Data'
-            return student_number
-        except unsw_ldap.UserNotFoundError:
-            print 'Student not found'
-            return None
+    try:
+        user = ldap_client.get_user(student_number)
+        print user['display_name']
+        print user['school']
+        print user['faculty']
+        return student_number
+    except unsw_ldap.LDAPError:
+        print 'Error retreiving LDAP Data'
+        return student_number
+    except unsw_ldap.UserNotFoundError:
+        print 'Student not found'
+        return None
     return student_number
 
 def get_student_number(ldap_client):
@@ -80,10 +78,10 @@ def swipe_loop(card_queue, ldap_client, bark_client):
         # Add delayed uploading here
 
 def save_swipes(swipes, event_name):
-    save_file_name = [c for c in event_number if isalpha(c)]
-    save_file_name.append(datetime.datetime.now().isoformat())
+    save_file_name = ''.join([c for c in event_name if c.isalpha()])
+    save_file_name += datetime.datetime.now().isoformat()
     save_file = open(save_file_name, 'w')
-    pickle.dumps(swipes, save_file)
+    pickle.dump(swipes, save_file)
 
 if __name__ == '__main__':
     print 'Connecting to serial reader...',
@@ -116,9 +114,9 @@ if __name__ == '__main__':
     print 'Selected: ' + events[event_number]['name']
 
     finished = False
+    reader.start()
     while not finished: 
         try:
-            reader.start()
             print 'ctrl-c to stop'
             swipe_loop(card_queue, ldap_client, bark_client)
 
@@ -126,14 +124,15 @@ if __name__ == '__main__':
             reader.stop()
             choice = raw_input('(R)eset reader, go (O)ffline, (S)ave swipes, Save and (E)xit')
             if choice == 'r' or choice == 'R':
-                with q.mutex:
-                    q.queue.clear()
+                with card_queue.mutex:
+                    card_queue.queue.clear()
+                print 'Card queue cleared'
                 reader.reset()
             elif choice == 'O':
                 offline = True
                 bark_client.offline = True
             elif choice == 's' or choice == 'S':
-                save_swipes(bark_client.get_session_swipes(), event[event_number]['name'])
+                save_swipes(bark_client.get_session_swipes(), events[event_number]['name'])
             elif choice == 'e' or choice == 'E':
-                save_swipes(bark_client.get_session_swipes(), event[event_number]['name'])
+                save_swipes(bark_client.get_session_swipes(), events[event_number]['name'])
                 finished = True

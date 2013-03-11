@@ -85,6 +85,9 @@ class ThreadedUSBSerialReader(threading.Thread):
     def stop(self):
         self.stop_scheduled.set()
 
+    def reset(self):
+        self.reset_needed.set()
+
 if __name__ == '__main__':
     r = None
     try:
