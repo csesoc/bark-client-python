@@ -37,7 +37,7 @@ def query_user(ldap_conn, zid):
 
     return details
 
-def handle_ldap_error():
+def handle_ldap_error(verbose=False):
     if verbose:
         print >> sys.stdout, 'Problem connecting to LDAP server'
 
