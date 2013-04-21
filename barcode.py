@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 from os import sys
 import getpass
+import datetime
 
 import unsw_ldap
+
+# Global flag for LDAP lookup on every scan
+ldap_disabled = False
 
 def get_student_number(barcode):
     return barcode[2:9]
@@ -20,28 +24,38 @@ ldap = unsw_ldap.UnswLdapClient(zid, zpass)
 # Read currently seen users from file
 try:
     with open(sys.argv[1]) as f:
-        seen = set(f)
+        seen = set([x.split('|')[0] for x in f])
 except IOError:
     seen = set()
 
+print seen
+
 # Readloop
-while (1):
-    barcode = sys.stdin.readline()
-    sn = get_student_number(barcode)
-    print 'Student Number:', sn
-    if barcode not in seen:
-        seen.add(barcode)
-        with open(sys.argv[1], 'a') as f:
-            f.write(barcode)
-        try:
-            print ldap.get_user(sn)
-        except:
-            print 'Error retrieving LDAP data'
+running = True
+while (running):
+    try:
+        print 'Listening for barcodes'
+        while (1):
+            barcode = sys.stdin.readline().strip()
+            if barcode not in seen:
+                seen.add(barcode)
+                with open(sys.argv[1], 'a') as f:
+                    f.write(barcode.strip() + '|' + datetime.datetime.now().isoformat() + '\n')
+                if not ldap_disabled:
+                    print 'Fetching LDAP record'
+                    try:
+                        print ldap.get_user('z' + get_student_number(barcode))
+                    except:
+                        print 'Error retrieving LDAP data'
+                        print 'LDAP Disabled (ctrl-c to re-enable)'
+                        ldap_disabled = True
 
-    else:
-        print '#' * 80
-        print
-        print 'Double Scan'
-        print
-        print '#' * 80
-
+            else:
+                print '#' * 10, "Multiple Scans!", '#' * 10
+    except KeyboardInterrupt:
+        print 'Listening paused'
+        action = raw_input('re-enable (l)dap, (q)uit? All other input restarts: ')
+        if action == 'l':
+            ldap_disabled = False
+        elif action == 'q':
+            sys.exit()
