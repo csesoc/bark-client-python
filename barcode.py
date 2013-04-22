@@ -42,9 +42,9 @@ while (running):
                 with open(sys.argv[1], 'a') as f:
                     f.write(barcode.strip() + '|' + datetime.datetime.now().isoformat() + '\n')
                 if not ldap_disabled:
-                    print 'Fetching LDAP record'
+                    print 'Fetching LDAP record for barcode: ' + barcode
                     try:
-                        print ldap.get_user('z' + get_student_number(barcode))
+                        print ldap.get_user_by_barcode(barcode)
                     except:
                         print 'Error retrieving LDAP data'
                         print 'LDAP Disabled (ctrl-c to re-enable)'

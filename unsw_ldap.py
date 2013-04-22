@@ -19,7 +19,9 @@ def get_ldap_connection(zid, zpass):
 
 def query_user(ldap_conn, zid):
     searchScope = ldap.SCOPE_SUBTREE
-    retrieveAttributes = ['cn', 'displayNamePrintable', 'givenName', 'sn', 'mail','extensionAttribute10','extensionAttribute11', 'displayName']
+    retrieveAttributes = ['cn', 'displayNamePrintable', 'givenName', 'sn',
+            'mail', 'extensionAttribute10', 'extensionAttribute11',
+            'extensionAttribute12', 'displayName']
     searchFilter = "cn=" + zid
     ldap_result = ldap_conn.search(BASE_DN, searchScope, searchFilter, retrieveAttributes)
     result_type, result_data = ldap_conn.result(ldap_result, 0)
@@ -31,6 +33,30 @@ def query_user(ldap_conn, zid):
         details['email'] = attr_results['mail'][0]
         details['faculty'] = attr_results['extensionAttribute10'][0]
         details['school'] = attr_results['extensionAttribute11'][0]
+        details['barcode'] = attr_results['extensionAttribute12'][0]
+        details['display_name'] = attr_results['displayName'][0]
+    except (IndexError, KeyError):
+        raise UserNotFoundError
+
+    return details
+
+def query_user_by_barcode(ldap_conn, barcode):
+    searchScope = ldap.SCOPE_SUBTREE
+    retrieveAttributes = ['cn', 'displayNamePrintable', 'givenName', 'sn',
+            'mail', 'extensionAttribute10', 'extensionAttribute11',
+            'extensionAttribute12', 'displayName']
+    searchFilter = "extensionAttribute12=" + barcode
+    ldap_result = ldap_conn.search(BASE_DN, searchScope, searchFilter, retrieveAttributes)
+    result_type, result_data = ldap_conn.result(ldap_result, 0)
+    try:
+        user_dn,attr_results = result_data[0]
+        details = {}
+        details['given_name'] = attr_results['givenName'][0]
+        details['last_name'] = attr_results['sn'][0]
+        details['email'] = attr_results['mail'][0]
+        details['faculty'] = attr_results['extensionAttribute10'][0]
+        details['school'] = attr_results['extensionAttribute11'][0]
+        details['barcode'] = attr_results['extensionAttribute12'][0]
         details['display_name'] = attr_results['displayName'][0]
     except (IndexError, KeyError):
         raise UserNotFoundError
@@ -74,6 +100,28 @@ class UnswLdapClient():
             try:
                 self.conn = get_ldap_connection(self.user_zid, self.user_zpass)
                 result = query_user(self.conn, zid)
+            except ldap.LDAPError:
+                handle_ldap_error()
+                result = None
+
+        if result == None:
+            raise LDAPError
+
+        return result
+
+    def get_user_by_barcode(self, barcode):
+        result = None
+        if self.conn is not None:
+            try:
+                result = query_user_by_barcode(self.conn, barcode)
+            except ldap.LDAPError:
+                handle_ldap_error()
+                result = None
+         
+        if result == None:
+            try:
+                self.conn = get_ldap_connection(self.user_zid, self.user_zpass)
+                result = query_user_by_barcode(self.conn, barcode)
             except ldap.LDAPError:
                 handle_ldap_error()
                 result = None
